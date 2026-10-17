@@ -319,6 +319,7 @@ fun CineMotionStudioApp(
                         StudioDestination.STUDIO -> {
                             StudioWorkspaceScreen(
                                 uiState = uiState,
+                                savedProjects = savedProjects,
                                 viewModel = viewModel,
                                 onRequestVoiceInput = onRequestEnglishVoiceInput,
                                 modifier = Modifier.fillMaxSize()

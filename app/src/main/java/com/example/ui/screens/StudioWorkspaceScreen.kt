@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.data.VideoProjectEntity
 import com.example.model.AspectRatioPreset
 import com.example.model.CameraMotionPreset
 import com.example.model.VisualAestheticPreset
@@ -56,6 +57,7 @@ import com.example.viewmodel.StudioViewModel
 @Composable
 fun StudioWorkspaceScreen(
     uiState: StudioUiState,
+    savedProjects: List<VideoProjectEntity>,
     viewModel: StudioViewModel,
     onRequestVoiceInput: () -> Unit,
     modifier: Modifier = Modifier
@@ -111,12 +113,22 @@ fun StudioWorkspaceScreen(
                                 viewModel.generateShortVideo15sPipeline()
                             }
                         )
+                        GeneratedVideosShowcaseSection(
+                            savedProjects = savedProjects,
+                            activeSeed = uiState.seed,
+                            onPlayProject = { project ->
+                                viewModel.loadProjectFromHistory(project)
+                                viewModel.triggerEnglishVoicePreview()
+                            },
+                            onExportMp4 = viewModel::exportAndShareMp4Video,
+                            onDeleteProject = viewModel::deleteHistoryProject
+                        )
                         EmpatheticScriptPreviewCard(uiState = uiState, viewModel = viewModel)
                     }
                 }
             }
         } else {
-            // Compact Vertical Handheld Layout — Prompt-to-Video Generator right at the top
+            // Compact Vertical Handheld Layout — Prompt-to-Video Generator & Generated Videos Section right at the top
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -141,12 +153,192 @@ fun StudioWorkspaceScreen(
                         viewModel.generateShortVideo15sPipeline()
                     }
                 )
+                GeneratedVideosShowcaseSection(
+                    savedProjects = savedProjects,
+                    activeSeed = uiState.seed,
+                    onPlayProject = { project ->
+                        viewModel.loadProjectFromHistory(project)
+                        viewModel.triggerEnglishVoicePreview()
+                    },
+                    onExportMp4 = viewModel::exportAndShareMp4Video,
+                    onDeleteProject = viewModel::deleteHistoryProject
+                )
                 EmpatheticScriptPreviewCard(uiState = uiState, viewModel = viewModel)
                 StudioControlsColumn(
                     uiState = uiState,
                     viewModel = viewModel,
                     onRequestVoiceInput = onRequestVoiceInput
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GeneratedVideosShowcaseSection(
+    savedProjects: List<VideoProjectEntity>,
+    activeSeed: Int,
+    onPlayProject: (VideoProjectEntity) -> Unit,
+    onExportMp4: () -> Unit,
+    onDeleteProject: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("generated_videos_showcase_section"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Videocam,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Column {
+                        Text(
+                            text = "Generated Videos (${savedProjects.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Tap any generated video below to watch with English lip-sync on the live stage",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            if (savedProjects.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Your generated videos will appear here immediately after tapping 'Prompt to Video (1.2s)'.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    savedProjects.forEach { project ->
+                        val isCurrentlyLoaded = project.seed == activeSeed
+                        val stylePreset = VisualAestheticPreset.entries.firstOrNull { it.id == project.visualAestheticId }
+                            ?: VisualAestheticPreset.HYPER_REALISTIC
+
+                        Surface(
+                            modifier = Modifier
+                                .width(270.dp)
+                                .clickable { onPlayProject(project) }
+                                .testTag("generated_video_card_${project.id}"),
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isCurrentlyLoaded) {
+                                stylePreset.secondaryColor
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            },
+                            border = BorderStroke(
+                                width = if (isCurrentlyLoaded) 2.dp else 1.dp,
+                                color = if (isCurrentlyLoaded) stylePreset.primaryColor else MaterialTheme.colorScheme.outline
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        color = stylePreset.primaryColor,
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = stylePreset.displayName,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = androidx.compose.ui.graphics.Color.White,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "${project.durationSeconds}s • ${project.aspectRatioId}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Text(
+                                    text = project.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                Text(
+                                    text = "\"${project.empatheticEnglishScript}\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = { onPlayProject(project) },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                            .testTag("btn_watch_generated_${project.id}"),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(if (isCurrentlyLoaded) "Playing Now" else "Watch Video")
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            onPlayProject(project)
+                                            onExportMp4()
+                                        },
+                                        modifier = Modifier.height(40.dp),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("MP4")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

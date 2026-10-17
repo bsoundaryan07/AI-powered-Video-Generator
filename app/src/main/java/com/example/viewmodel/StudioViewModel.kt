@@ -108,10 +108,49 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
             initialValue = emptyList()
         )
 
-        // Initialize default viseme timeline and storyboard
+        // Initialize default viseme timeline, storyboard, and starter video gallery
         rebuildVisemeTimeline(_uiState.value.empatheticEnglishScript, _uiState.value.durationSeconds)
         loadDefaultStoryboard()
+        seedInitialGalleryIfEmpty()
         startPlaybackLoop()
+    }
+
+    private fun seedInitialGalleryIfEmpty() {
+        viewModelScope.launch {
+            delay(250L)
+            if (savedProjects.value.isEmpty()) {
+                repository.saveProject(
+                    VideoProjectEntity(
+                        title = "Sunlit Artisan Studio Bird",
+                        originalPrompt = "A sunlit artisan workshop where a creator sculpts a warm wooden bird that gently comes to life.",
+                        empatheticEnglishScript = "In the quiet warmth of morning daylight, a simple handwritten sketch begins to breathe. Every careful brushstroke carries a genuine human touch that connects us all.",
+                        visualAestheticId = VisualAestheticPreset.HYPER_REALISTIC.id,
+                        cameraMotionId = CameraMotionPreset.DYNAMIC_ZOOM_IN.id,
+                        aspectRatioId = AspectRatioPreset.LANDSCAPE_16_9.id,
+                        voicePresetId = EnglishVoicePreset.CLARA_US.id,
+                        durationSeconds = 6,
+                        seed = 482910,
+                        mp4FilePath = null,
+                        keyframeBase64 = null
+                    )
+                )
+                repository.saveProject(
+                    VideoProjectEntity(
+                        title = "Pixar 3D Cozy Bakery Sunrise",
+                        originalPrompt = "A cozy 3D animated bakery at sunrise where warm golden light fills the room and the baker smiles.",
+                        empatheticEnglishScript = "Nothing brings people together quite like warm morning light and a shared story crafted with care and joy.",
+                        visualAestheticId = VisualAestheticPreset.THREE_D_ANIMATION.id,
+                        cameraMotionId = CameraMotionPreset.ORBIT_360.id,
+                        aspectRatioId = AspectRatioPreset.LANDSCAPE_16_9.id,
+                        voicePresetId = EnglishVoicePreset.ARTHUR_UK.id,
+                        durationSeconds = 6,
+                        seed = 739204,
+                        mp4FilePath = null,
+                        keyframeBase64 = null
+                    )
+                )
+            }
+        }
     }
 
     private fun startPlaybackLoop() {
