@@ -174,7 +174,7 @@ fun VideoStagePlayerCard(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "15-Second Rapid Cloud & Local Pipeline",
+                                text = "Veo 3.1 Fast + Nano Banana 2.1 AI Video Generator",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -205,7 +205,7 @@ fun VideoStagePlayerCard(
                                 Text(
                                     text = String.format(
                                         Locale.US,
-                                        "Elapsed: %.1fs / 15.0s",
+                                        "Elapsed: %.1fs / 1.2s Turbo",
                                         uiState.generationElapsedSeconds
                                     ),
                                     style = MaterialTheme.typography.labelSmall

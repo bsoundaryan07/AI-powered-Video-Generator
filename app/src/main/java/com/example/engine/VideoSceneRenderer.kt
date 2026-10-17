@@ -100,14 +100,21 @@ object VideoSceneRenderer {
         canvas.scale(scale, scale)
         canvas.translate(-width / 2f, -height / 2f)
 
-        // 2. Render Background Scene (Nano Banana AI Keyframe or Styled Procedural Environment)
+        // 2. Render Background Scene (Nano Banana AI Keyframe or Prompt-Driven Procedural Scene)
         if (aiKeyframeBitmap != null && !aiKeyframeBitmap.isRecycled) {
             val srcRect = Rect(0, 0, aiKeyframeBitmap.width, aiKeyframeBitmap.height)
             val dstRect = RectF(0f, 0f, width.toFloat(), height.toFloat())
             val bmpPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
             canvas.drawBitmap(aiKeyframeBitmap, srcRect, dstRect, bmpPaint)
         } else {
-            drawProceduralEnvironment(canvas, width.toFloat(), height.toFloat(), progress, style)
+            drawProceduralEnvironment(
+                canvas = canvas,
+                w = width.toFloat(),
+                h = height.toFloat(),
+                progress = progress,
+                style = style,
+                promptText = englishScript
+            )
         }
 
         canvas.restore()
@@ -145,27 +152,50 @@ object VideoSceneRenderer {
         w: Float,
         h: Float,
         progress: Float,
-        style: VisualAestheticPreset
+        style: VisualAestheticPreset,
+        promptText: String
     ) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val lowerPrompt = promptText.lowercase()
 
-        // Clean, warm daylight-friendly sky/backdrop depending on style
-        val (topColor, bottomColor, accentColor) = when (style) {
-            VisualAestheticPreset.HYPER_REALISTIC ->
+        // Semantic Prompt Scene Analysis
+        val isNightOrSpace = lowerPrompt.contains("night") || lowerPrompt.contains("midnight") ||
+            lowerPrompt.contains("star") || lowerPrompt.contains("space") || lowerPrompt.contains("galaxy")
+        val isSunsetOrGolden = lowerPrompt.contains("sunset") || lowerPrompt.contains("sunrise") ||
+            lowerPrompt.contains("golden") || lowerPrompt.contains("dawn")
+        val isCityOrCyber = lowerPrompt.contains("city") || lowerPrompt.contains("street") ||
+            lowerPrompt.contains("tower") || lowerPrompt.contains("building") ||
+            lowerPrompt.contains("neon") || lowerPrompt.contains("tokyo") || lowerPrompt.contains("plaza") ||
+            style == VisualAestheticPreset.CYBERPUNK_SCIFI
+        val isOceanOrWater = lowerPrompt.contains("ocean") || lowerPrompt.contains("sea") ||
+            lowerPrompt.contains("beach") || lowerPrompt.contains("water") ||
+            lowerPrompt.contains("lake") || lowerPrompt.contains("river") || lowerPrompt.contains("lighthouse")
+        val isForestOrNature = lowerPrompt.contains("forest") || lowerPrompt.contains("tree") ||
+            lowerPrompt.contains("garden") || lowerPrompt.contains("botanical") ||
+            lowerPrompt.contains("meadow") || lowerPrompt.contains("flower")
+        val isRainy = lowerPrompt.contains("rain") || lowerPrompt.contains("storm")
+
+        // Clean, warm daylight-friendly sky/backdrop depending on style & prompt atmosphere
+        val (topColor, bottomColor, accentColor) = when {
+            isSunsetOrGolden ->
+                Triple(Color.rgb(254, 215, 170), Color.rgb(255, 247, 237), Color.rgb(194, 65, 12))
+            isNightOrSpace ->
+                Triple(Color.rgb(199, 210, 254), Color.rgb(238, 242, 255), Color.rgb(49, 46, 129))
+            style == VisualAestheticPreset.HYPER_REALISTIC ->
                 Triple(Color.rgb(219, 234, 254), Color.rgb(248, 250, 252), Color.rgb(30, 58, 138))
-            VisualAestheticPreset.THREE_D_ANIMATION ->
+            style == VisualAestheticPreset.THREE_D_ANIMATION ->
                 Triple(Color.rgb(254, 243, 199), Color.rgb(255, 251, 235), Color.rgb(180, 83, 9))
-            VisualAestheticPreset.ANIME_GHIBLI ->
+            style == VisualAestheticPreset.ANIME_GHIBLI ->
                 Triple(Color.rgb(204, 251, 241), Color.rgb(240, 253, 250), Color.rgb(15, 118, 110))
-            VisualAestheticPreset.CYBERPUNK_SCIFI ->
+            style == VisualAestheticPreset.CYBERPUNK_SCIFI ->
                 Triple(Color.rgb(224, 231, 255), Color.rgb(238, 242, 255), Color.rgb(67, 56, 202))
-            VisualAestheticPreset.CINEMATIC_MASTERPIECE ->
+            style == VisualAestheticPreset.CINEMATIC_MASTERPIECE ->
                 Triple(Color.rgb(255, 237, 213), Color.rgb(255, 247, 237), Color.rgb(154, 52, 18))
-            VisualAestheticPreset.CLAYMATION_STOP_MOTION ->
+            style == VisualAestheticPreset.CLAYMATION_STOP_MOTION ->
                 Triple(Color.rgb(220, 252, 231), Color.rgb(240, 253, 244), Color.rgb(21, 128, 61))
-            VisualAestheticPreset.FANTASY_MYTHOLOGICAL ->
+            style == VisualAestheticPreset.FANTASY_MYTHOLOGICAL ->
                 Triple(Color.rgb(237, 233, 254), Color.rgb(245, 243, 255), Color.rgb(109, 40, 217))
-            VisualAestheticPreset.RETRO_SYNTHWAVE ->
+            else ->
                 Triple(Color.rgb(252, 231, 243), Color.rgb(253, 242, 248), Color.rgb(190, 24, 93))
         }
 
@@ -173,41 +203,109 @@ object VideoSceneRenderer {
         canvas.drawRect(0f, 0f, w, h, paint)
         paint.shader = null
 
-        // Warm Sun / Studio Key Light Disc
-        paint.color = Color.argb(90, 251, 191, 36)
-        val sunX = w * (0.28f + 0.12f * progress)
-        val sunY = h * (0.26f - 0.04f * sin(progress * Math.PI.toFloat()))
-        canvas.drawCircle(sunX, sunY, min(w, h) * 0.16f, paint)
-
-        // Layered Architectural / Landscape Silhouettes
-        val hillPath = Path().apply {
-            moveTo(0f, h * 0.68f)
-            quadTo(w * 0.28f, h * (0.54f - 0.03f * sin(progress * 3f)), w * 0.55f, h * 0.65f)
-            quadTo(w * 0.80f, h * 0.74f, w, h * 0.60f)
-            lineTo(w, h)
-            lineTo(0f, h)
-            close()
+        // Sun / Moon / Orbital Key Light Disc
+        paint.color = if (isNightOrSpace) {
+            Color.argb(140, 255, 255, 255)
+        } else {
+            Color.argb(110, 245, 158, 11)
         }
-        paint.color = Color.argb(45, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
-        canvas.drawPath(hillPath, paint)
+        val sunX = w * (0.24f + 0.16f * progress)
+        val sunY = h * (0.25f - 0.04f * sin(progress * Math.PI.toFloat()))
+        canvas.drawCircle(sunX, sunY, min(w, h) * 0.15f, paint)
 
-        // Foreground Horizon Plane
-        val fgPath = Path().apply {
-            moveTo(0f, h * 0.78f)
-            quadTo(w * 0.45f, h * (0.72f + 0.02f * cos(progress * 4f)), w, h * 0.80f)
-            lineTo(w, h)
-            lineTo(0f, h)
-            close()
+        // Drifting Clouds / Sky Ribbons
+        paint.color = Color.argb(135, 255, 255, 255)
+        for (c in 0 until 3) {
+            val cx = ((w * (0.20f + c * 0.32f) + progress * 45f * (c + 1)) % (w + 120f)) - 60f
+            val cy = h * (0.18f + c * 0.06f)
+            canvas.drawRoundRect(RectF(cx, cy, cx + 96f, cy + 22f), 12f, 12f, paint)
         }
-        paint.color = Color.argb(80, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
-        canvas.drawPath(fgPath, paint)
 
-        // Subtle Floating Light Motes / Depth Elements
-        paint.color = Color.argb(130, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
-        for (i in 0 until 8) {
-            val px = ((w * (0.12f * i + 0.08f) + progress * 60f * ((i % 3) + 1)) % w)
-            val py = h * (0.22f + (i % 4) * 0.12f) + sin(progress * 6f + i) * 10f
-            canvas.drawCircle(px, py, 3.5f + (i % 3) * 1.5f, paint)
+        // Semantic City Skyline if prompt mentions city/street/building/cyberpunk
+        if (isCityOrCyber) {
+            paint.color = Color.argb(55, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+            val bCount = 9
+            val bWidth = w / bCount
+            for (b in 0 until bCount) {
+                val bh = h * (0.22f + ((b * 37) % 25) / 100f)
+                val bx = b * bWidth + 4f
+                val by = h * 0.76f - bh
+                canvas.drawRoundRect(RectF(bx, by, bx + bWidth - 8f, h * 0.78f), 6f, 6f, paint)
+            }
+        } else {
+            // Layered Mountain / Hill Silhouettes
+            val hillPath = Path().apply {
+                moveTo(0f, h * 0.68f)
+                quadTo(w * 0.28f, h * (0.52f - 0.03f * sin(progress * 3f)), w * 0.55f, h * 0.65f)
+                quadTo(w * 0.80f, h * 0.74f, w, h * 0.58f)
+                lineTo(w, h)
+                lineTo(0f, h)
+                close()
+            }
+            paint.color = Color.argb(48, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+            canvas.drawPath(hillPath, paint)
+        }
+
+        // Semantic Trees / Botanicals if prompt mentions forest/garden/meadow/tree
+        if (isForestOrNature) {
+            paint.color = Color.argb(85, 21, 128, 61)
+            for (t in 0 until 6) {
+                val tx = w * (0.10f + t * 0.16f) + sin(progress * 4f + t) * 4f
+                val ty = h * 0.74f
+                val treePath = Path().apply {
+                    moveTo(tx, ty - 48f)
+                    lineTo(tx - 18f, ty)
+                    lineTo(tx + 18f, ty)
+                    close()
+                }
+                canvas.drawPath(treePath, paint)
+            }
+        }
+
+        // Foreground Horizon Plane or Animated Ocean Waves
+        if (isOceanOrWater) {
+            for (waveIdx in 0 until 3) {
+                val waveY = h * (0.74f + waveIdx * 0.07f)
+                val wavePath = Path().apply {
+                    moveTo(0f, waveY)
+                    val shift = sin(progress * 6f + waveIdx) * 14f
+                    quadTo(w * 0.25f, waveY - 12f + shift, w * 0.5f, waveY)
+                    quadTo(w * 0.75f, waveY + 12f - shift, w, waveY)
+                    lineTo(w, h)
+                    lineTo(0f, h)
+                    close()
+                }
+                paint.color = Color.argb(75 + waveIdx * 30, 14, 116, 144)
+                canvas.drawPath(wavePath, paint)
+            }
+        } else {
+            val fgPath = Path().apply {
+                moveTo(0f, h * 0.78f)
+                quadTo(w * 0.45f, h * (0.72f + 0.02f * cos(progress * 4f)), w, h * 0.80f)
+                lineTo(w, h)
+                lineTo(0f, h)
+                close()
+            }
+            paint.color = Color.argb(80, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+            canvas.drawPath(fgPath, paint)
+        }
+
+        // Rain Streaks or Floating Light Motes
+        if (isRainy) {
+            paint.color = Color.argb(120, 30, 58, 138)
+            paint.strokeWidth = 2f
+            for (r in 0 until 18) {
+                val rx = ((w * (r * 0.06f) + progress * 140f) % w)
+                val ry = ((h * (r * 0.09f) + progress * 260f) % h)
+                canvas.drawLine(rx, ry, rx - 8f, ry + 22f, paint)
+            }
+        } else {
+            paint.color = Color.argb(135, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor))
+            for (i in 0 until 8) {
+                val px = ((w * (0.12f * i + 0.08f) + progress * 60f * ((i % 3) + 1)) % w)
+                val py = h * (0.22f + (i % 4) * 0.12f) + sin(progress * 6f + i) * 10f
+                canvas.drawCircle(px, py, 3.5f + (i % 3) * 1.5f, paint)
+            }
         }
     }
 

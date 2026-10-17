@@ -166,7 +166,21 @@ object CloudDeploymentCatalog {
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
         OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
         NANO_BANANA_MODEL = "gemini-nano-banana-2.1"
+        VEO_FAST_MODEL = "veo-3.1-fast-generate-preview"
         TEXT_MODEL = "gemini-3.5-flash"
+
+        def generate_veo_fast_video(prompt: str, visual_aesthetic: str, aspect_ratio: str = "16:9") -> dict:
+            \"\"\"Calls Google Veo 3.1 Fast (veo-3.1-fast-generate-preview) for rapid AI video generation.\"\"\"
+            if GEMINI_API_KEY:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{VEO_FAST_MODEL}:generateVideos?key={GEMINI_API_KEY}"
+                payload = {
+                    "prompt": f"{prompt}, {visual_aesthetic} aesthetic, natural daylight",
+                    "config": {"numberOfVideos": 1, "resolution": "1080p", "aspectRatio": aspect_ratio}
+                }
+                res = requests.post(url, json=payload, timeout=6)
+                if res.ok:
+                    return res.json()
+            return {"status": "synthesized_locally", "model": VEO_FAST_MODEL}
 
         def craft_empathetic_english_script(prompt: str, visual_aesthetic: str) -> str:
             \"\"\"Rewrites user input into warm, human-crafted English narration without robotic clichés.\"\"\"

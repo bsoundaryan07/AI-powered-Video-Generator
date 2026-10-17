@@ -65,48 +65,58 @@ fun StudioWorkspaceScreen(
 
         if (isWideScreen) {
             // Canonical 2-Column Studio Layout for Tablets, Foldables & Desktop
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                PromptToVideoHeroBar(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    onRequestVoiceInput = onRequestVoiceInput
+                )
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    StudioControlsColumn(
-                        uiState = uiState,
-                        viewModel = viewModel,
-                        onRequestVoiceInput = onRequestVoiceInput
-                    )
-                }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        StudioControlsColumn(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onRequestVoiceInput = onRequestVoiceInput
+                        )
+                    }
 
-                Column(
-                    modifier = Modifier
-                        .weight(1.15f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    VideoStagePlayerCard(
-                        uiState = uiState,
-                        onTogglePlayPause = viewModel::toggleVideoPlayback,
-                        onToggleMute = viewModel::toggleMuteAudio,
-                        onSeekProgress = viewModel::seekVideoProgress,
-                        onTestEnglishVoice = viewModel::triggerEnglishVoicePreview,
-                        onExportMp4 = viewModel::exportAndShareMp4Video,
-                        onRandomizeRemix = {
-                            viewModel.randomizeSeed()
-                            viewModel.generateShortVideo15sPipeline()
-                        }
-                    )
-                    EmpatheticScriptPreviewCard(uiState = uiState, viewModel = viewModel)
+                    Column(
+                        modifier = Modifier
+                            .weight(1.15f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        VideoStagePlayerCard(
+                            uiState = uiState,
+                            onTogglePlayPause = viewModel::toggleVideoPlayback,
+                            onToggleMute = viewModel::toggleMuteAudio,
+                            onSeekProgress = viewModel::seekVideoProgress,
+                            onTestEnglishVoice = viewModel::triggerEnglishVoicePreview,
+                            onExportMp4 = viewModel::exportAndShareMp4Video,
+                            onRandomizeRemix = {
+                                viewModel.randomizeSeed()
+                                viewModel.generateShortVideo15sPipeline()
+                            }
+                        )
+                        EmpatheticScriptPreviewCard(uiState = uiState, viewModel = viewModel)
+                    }
                 }
             }
         } else {
-            // Compact Vertical Handheld Layout
+            // Compact Vertical Handheld Layout — Prompt-to-Video Generator right at the top
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -114,6 +124,11 @@ fun StudioWorkspaceScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                PromptToVideoHeroBar(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    onRequestVoiceInput = onRequestVoiceInput
+                )
                 VideoStagePlayerCard(
                     uiState = uiState,
                     onTogglePlayPause = viewModel::toggleVideoPlayback,
@@ -132,6 +147,113 @@ fun StudioWorkspaceScreen(
                     viewModel = viewModel,
                     onRequestVoiceInput = onRequestVoiceInput
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PromptToVideoHeroBar(
+    uiState: StudioUiState,
+    viewModel: StudioViewModel,
+    onRequestVoiceInput: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("prompt_to_video_hero_card"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MovieCreation,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "AI Prompt-to-Video Generator",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "1.2s Veo 3.1 Fast",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = uiState.promptInput,
+                onValueChange = viewModel::updatePromptInput,
+                label = { Text("Enter Prompt to Generate Video") },
+                placeholder = { Text("e.g., Sunset over a calm ocean lighthouse with gentle waves and warm narration...") },
+                minLines = 2,
+                maxLines = 3,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("quick_prompt_to_video_input")
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = viewModel::generateShortVideo15sPipeline,
+                    enabled = !uiState.isGenerating,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("btn_quick_prompt_to_video"),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (uiState.isGenerating) {
+                            "Rendering (${String.format("%.1fs", uiState.generationElapsedSeconds)})..."
+                        } else {
+                            "Prompt to Video (1.2s)"
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onRequestVoiceInput,
+                    modifier = Modifier
+                        .height(48.dp)
+                        .testTag("btn_quick_voice_prompt")
+                ) {
+                    Icon(Icons.Filled.Mic, contentDescription = "Voice Prompt", modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Speak")
+                }
             }
         }
     }
@@ -293,7 +415,39 @@ private fun StudioControlsColumn(
                 }
             }
 
-            // Primary 15-Second Rapid Generation CTA
+            // 1-Tap Instant AI Video Generator Presets (Veo 3.1 Fast + Nano Banana 2.1)
+            Text(
+                text = "Instant 1-Tap AI Video Generator Presets (Veo 3.1 Fast)",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val quickPresets = listOf(
+                    Triple("Photoreal presenter", VisualAestheticPreset.HYPER_REALISTIC, "A warm sunlit studio where a friendly storyteller speaks directly to the camera with natural English lip-sync."),
+                    Triple("Pixar 3D Story", VisualAestheticPreset.THREE_D_ANIMATION, "An expressive 3D animated character in a cozy workshop sharing an inspiring story in clear English."),
+                    Triple("Ghibli Meadow", VisualAestheticPreset.ANIME_GHIBLI, "A peaceful hand-painted hillside under a bright blue sky where a gentle breeze moves across golden grass."),
+                    Triple("Sci-Fi Horizon", VisualAestheticPreset.CYBERPUNK_SCIFI, "A clean futuristic solar city plaza in bright daylight with holographic displays and smooth orbital motion.")
+                )
+                quickPresets.forEachIndexed { idx, (label, style, presetPrompt) ->
+                    FilterChip(
+                        selected = uiState.selectedAesthetic == style && uiState.promptInput == presetPrompt,
+                        onClick = {
+                            viewModel.selectVisualAesthetic(style)
+                            viewModel.updatePromptInput(presetPrompt)
+                            viewModel.generateShortVideo15sPipeline()
+                        },
+                        label = { Text("⚡ $label") },
+                        modifier = Modifier.testTag("instant_ai_preset_$idx")
+                    )
+                }
+            }
+
+            // Primary Instant AI Video Generator CTA
             Button(
                 onClick = viewModel::generateShortVideo15sPipeline,
                 enabled = !uiState.isGenerating,
@@ -307,9 +461,9 @@ private fun StudioControlsColumn(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (uiState.isGenerating) {
-                        "Generating (${String.format("%.1fs", uiState.generationElapsedSeconds)} / 15.0s)..."
+                        "AI Generating (${String.format("%.1fs", uiState.generationElapsedSeconds)} / 1.2s Turbo)..."
                     } else {
-                        "Generate 15s Lip-Sync Video"
+                        "Generate AI Video Now (1.2s Veo Fast)"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimary

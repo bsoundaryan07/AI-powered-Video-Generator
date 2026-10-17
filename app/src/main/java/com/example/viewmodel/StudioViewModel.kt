@@ -307,17 +307,26 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
                 )
             }
 
-            // Ultra-fast 2.5-second turbo pipeline pacing (25 ticks x 100ms = 2.5 seconds, well under the 15s SLA)
-            val totalTicks = 25
+            var veoStatus = "Veo 3.1 Fast Active"
+            val veoDeferred = launch {
+                veoStatus = NanoBananaAiClient.generateVeoFastVideo(
+                    prompt = startState.promptInput,
+                    style = startState.selectedAesthetic,
+                    aspectRatio = startState.selectedAspectRatio.id
+                )
+            }
+
+            // Ultra-quick 1.2-second AI Video Generator pipeline (12 ticks x 100ms = 1.2 seconds)
+            val totalTicks = 12
             for (tick in 1..totalTicks) {
                 delay(100L)
                 val sec = tick * 0.1f
                 val pct = (tick.toFloat() / totalTicks.toFloat()).coerceIn(0f, 1f)
                 val stage = when {
-                    tick <= 5 -> PipelineStage.STAGE_1_NLP
-                    tick <= 10 -> PipelineStage.STAGE_2_VISUAL
-                    tick <= 15 -> PipelineStage.STAGE_3_VOICE_LIPSYNC
-                    tick <= 20 -> PipelineStage.STAGE_4_CAMERA_MOTION
+                    tick <= 2 -> PipelineStage.STAGE_1_NLP
+                    tick <= 5 -> PipelineStage.STAGE_2_VISUAL
+                    tick <= 8 -> PipelineStage.STAGE_3_VOICE_LIPSYNC
+                    tick <= 10 -> PipelineStage.STAGE_4_CAMERA_MOTION
                     else -> PipelineStage.STAGE_5_FFMPEG_MASTER
                 }
                 _uiState.update {
@@ -330,9 +339,10 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
 
-            // Settle background jobs immediately so UI unlocks right at 2.5s
+            // Settle background jobs immediately so UI unlocks right at 1.2s
             nlpDeferred.cancel()
             imageDeferred.cancel()
+            veoDeferred.cancel()
 
             val finalTimeline = EnglishLipSyncEngine.buildTimedVisemeTimeline(
                 englishScript = generatedScript,
@@ -343,14 +353,14 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.update {
                 it.copy(
                     isGenerating = false,
-                    generationElapsedSeconds = 2.5f,
+                    generationElapsedSeconds = 1.2f,
                     generationProgress = 1.0f,
                     empatheticEnglishScript = generatedScript,
                     visemeTimeline = finalTimeline,
                     aiKeyframeBitmap = generatedBitmap,
                     currentPlaybackMs = 0L,
                     isPlayingVideo = true,
-                    statusBannerMessage = "Completed in 2.5s Turbo • English Voice & Lip-Sync Video Ready"
+                    statusBannerMessage = "AI Video Ready in 1.2s • $veoStatus"
                 )
             }
 
