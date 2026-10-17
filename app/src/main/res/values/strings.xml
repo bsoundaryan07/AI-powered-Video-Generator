@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">CineMotion Studio</string>
+    <string name="studio_tab">Studio</string>
+    <string name="voice_lipsync_tab">Voice &amp; Lip-Sync</string>
+    <string name="storyboard_tab">Storyboard</string>
+    <string name="cloud_drive_tab">Cloud &amp; Web</string>
+    <string name="prompt_label">Scene Script &amp; Narrative Prompt</string>
+    <string name="prompt_hint">Describe your scene naturally in English, or use voice dictation…</string>
+    <string name="generate_video_cta">Generate 15s Short Video</string>
+    <string name="nano_banana_badge">Gemini Nano Banana 2.1 Active</string>
+    <string name="export_mp4">Export MP4 Video</string>
+    <string name="launch_web_studio">Open Browser Web Studio</string>
+    <string name="security_warning_banner">Security Notice: API keys are packaged for prototype usage. Do not share the APK publicly.</string>
+</resources>

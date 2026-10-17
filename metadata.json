@@ -1,0 +1,6 @@
+{
+  "name": "CineMotion Studio",
+  "description": "AI-powered text and English voice-to-short-video generator with real-time lip-sync avatar animation, Nano Banana NLP & visual synthesis, MoviePy/FFmpeg cloud architecture, Google Drive static hosting bundle, and embedded responsive web studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
